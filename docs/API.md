@@ -146,7 +146,7 @@ Response format:
 Assigns a user as Account Owner and updates user details. Only authorized users can call.
 
 
-*** Request Body: Example: ***
+***Request Body: Example:***
 ```json
 {
   "primary_mobile": "+201234567890",
@@ -156,7 +156,7 @@ Assigns a user as Account Owner and updates user details. Only authorized users 
 }
 ```
 
-Responses, Success
+***Responses, Success***
 ```jsoN
 {
   "status": "success",
@@ -165,7 +165,7 @@ Responses, Success
 ```
 
 
-*** Error – User not found ***
+***Error – User not found***
 ```json
 {
   "status": "error",
@@ -174,7 +174,7 @@ Responses, Success
 ```
 HTTP Status: 400 Bad Request
 
-Error – Invalid invite link
+***Error – Invalid invite link***
 ```json
 {
   "status": "error",
@@ -184,7 +184,7 @@ Error – Invalid invite link
 HTTP Status: 400 Bad Request
 
 
-Error – System error
+***Error – System error***
 ```json
 {
   "status": "error",
@@ -193,7 +193,7 @@ Error – System error
 ```
 HTTP Status: 500 Internal Server Error
 
-*** Notes: ***
+***Notes:***
 OTP must be verified before assigning user as Account Owner
 Only users with proper permissions can call this endpoint
 All messages are standardized via SUCCESS_MESSAGES and ERROR_MESSAGES
