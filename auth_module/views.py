@@ -3,6 +3,7 @@ from functools import partial
 import pyotp
 from drf_yasg.utils import swagger_auto_schema
 from requests import session
+from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,6 +11,8 @@ from rest_framework import status, permissions, serializers, generics
 from django.utils import timezone
 from datetime import timedelta
 import random
+
+from core.messages.warning import WARNING_MESSAGES
 from .models import OTP, LoginActivity
 from accounts.models import CustomUser, TwoALoginSession
 from .serializers import (
@@ -17,6 +20,9 @@ from .serializers import (
     OTPVerifyserializers, ResentOTPSerializers, LoginSerializer,
     TwoFACodeVerifySerializer, TwoFABackupVerifySerializer )
 from .utilits import verify_turnstile
+from core.messages.error import ERROR_MESSAGES
+from core.messages.success import SUCCESS_MESSAGES
+from core.messages.success import SUCCESS_MESSAGES
 
 MAX_ATTEMPTS = 3
 BLOCK_MINUTES = 15
@@ -25,8 +31,9 @@ OTP_EXPIRY_MINUTES = 5
 
 # SIGNUP VIEW
 class SignUPView(APIView):
+    permission_classes = [AllowAny]
 
-    @swagger_auto_schema(request_body=SignupSerializer, security=[])
+    @swagger_auto_schema(request_body=SignupSerializer)
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -34,32 +41,50 @@ class SignUPView(APIView):
         phone_number = serializer.validated_data.get('primary_mobile')
         full_name = serializer.validated_data.get('full_name')
 
-        # user yaratish yoki topish
-        user, created = CustomUser.objects.get_or_create(
-            primary_mobile=phone_number,
-            defaults={'full_name': full_name, "username": full_name}
-        )
+        if not phone_number or not full_name:
+            return Response(
+                {"status":"warning", "message":"Missing required fields."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # eski OTPlarni o‘chirish
-        OTP.objects.filter(phone_number=phone_number).delete()
+        try:
+            # user yaratish yoki topish
+            user, created = CustomUser.objects.get_or_create(
+                primary_mobile=phone_number,
+                defaults={'full_name': full_name, "username": full_name}
+            )
 
-        # yangi OTP yaratish
-        otp_code = str(random.randint(100000, 999999))
-        expires_at = timezone.now() + timedelta(minutes=5)
+            # eski OTPlarni o‘chirish
+            OTP.objects.filter(phone_number=phone_number).delete()
 
-        OTP.objects.create(phone_number=phone_number, otp_code=otp_code, expires_at=expires_at)
-        print(f"OTP for {phone_number} is {otp_code}")
+            # yangi OTP yaratish
+            otp_code = str(random.randint(100000, 999999))
+            expires_at = timezone.now() + timedelta(minutes=5)
 
-        return Response(
-            {"message": "OTP sent successfully", "expiry": "5 minutes"},
-            status=status.HTTP_200_OK
-        )
+            OTP.objects.create(phone_number=phone_number, otp_code=otp_code, expires_at=expires_at)
+            print(f"OTP for {phone_number} is {otp_code}")
+
+            return Response(
+                {
+                        "status": "success",
+                        "message": SUCCESS_MESSAGES["PHONE_OTP_SENT"],
+                        "expiry": "5 minutes"
+                      },status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            #System xatolilari uchun
+            return Response(
+                {"statuse":"error", "message": ERROR_MESSAGES["SYSTEM_ERROR"]},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 
 # VERIFY OTP VIEW
 class OTPVerifyView(APIView):
-    @swagger_auto_schema(request_body=OTPVerifyserializers, security=[])
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(request_body=OTPVerifyserializers)
     def post(self, request):
         serializer = OTPVerifyserializers(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -67,15 +92,23 @@ class OTPVerifyView(APIView):
         phone_number = serializer.validated_data.get('primary_mobile')
         otp_code = serializer.validated_data.get('otp_code')
 
+        if not phone_number or not otp_code:
+            return Response({
+                "statuse":"error", "message": WARNING_MESSAGES["MISSING_FIELDS"]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         otp_entry = OTP.objects.filter(phone_number=phone_number).first()
         if not otp_entry:
-            return Response({"error": "OTP not found. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "status": "warning", "message": WARNING_MESSAGES["OTP_EXPIRED"]},
+                status=status.HTTP_400_BAD_REQUEST)
 
         # bloklanganmi tekshirish
         if otp_entry.is_blocked:
             if otp_entry.blocked_until and otp_entry.blocked_until > timezone.now():
                 return Response(
-                    {"error": f"Too many failed attempts. Try again after {otp_entry.blocked_until}"},
+                    {"stats": "error", "message": ERROR_MESSAGES["TOO_MANY_ATTEMPTS"]},
                     status=status.HTTP_403_FORBIDDEN
                 )
             else:
@@ -88,7 +121,9 @@ class OTPVerifyView(APIView):
         # muddati tugaganmi
         if otp_entry.expires_at < timezone.now():
             otp_entry.delete()
-            return Response({"error": "OTP expired, please request a new one"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message": ERROR_MESSAGES["OTP_EXPIRED"]},
+                status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -100,7 +135,9 @@ class OTPVerifyView(APIView):
                 otp_entry.blocked_until = timezone.now() + timedelta(minutes=BLOCK_MINUTES)
             otp_entry.save()
             attempts_left = MAX_ATTEMPTS - otp_entry.attempts
-            return Response({"error": f"Incorrect OTP, you have {attempts_left} attempts left"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message":f"{ERROR_MESSAGES['INCORRECT_OTP']} You have{attempts_left} attempts left."},
+                status=status.HTTP_400_BAD_REQUEST)
 
         # to‘g‘ri bo‘lsa
         user = CustomUser.objects.filter(primary_mobile=phone_number).first()
@@ -108,14 +145,21 @@ class OTPVerifyView(APIView):
             user.phone_verified = True
             user.save()
         else:
-            return Response({"error": "User with this number does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error",
+                 "message": ERROR_MESSAGES["USER_NOT_FOUND"]},
+                  status=status.HTTP_400_BAD_REQUEST)
 
         otp_entry.delete()
-        return Response({"message": "Mobile number verified successfully"}, status=status.HTTP_200_OK)
+        return Response(
+            {"status": "success",
+             "message": SUCCESS_MESSAGES["MOBILE_VALIDATED"]},
+            status=status.HTTP_200_OK)
 
 
 
 class ResentOTPView(APIView):
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(request_body=ResentOTPSerializers, security=[])
     def post(self, request):
@@ -129,11 +173,10 @@ class ResentOTPView(APIView):
         phone_number = serializer.validated_data["primary_mobile"]
 
         #oxirgi otpni olish uchun
-        otp_entry = OTP.objects.filter(phone_number=phone_number).first()
-
-        if not otp_entry:
+        user_exists = CustomUser.objects.filter(primary_mobile=phone_number).exists()
+        if not user_exists:
             return Response(
-                {"error": "OTP request topilmadi , avval sign up qiling"},
+                {"error": "Bu raqam bilan signup qilinmagan"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
