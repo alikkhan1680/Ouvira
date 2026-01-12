@@ -17,29 +17,40 @@ from rest_framework.permissions import IsAuthenticated
 class RegisterOwnerView(APIView):
     permission_classes = [AllowAny]
     swagger_auto_schema(request_body=RegisterOwnerSerializer)
+
     def post(self, request):
         serializer = RegisterOwnerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
             user = UserService.update_existing_user(**serializer.validated_data)
+
         except BusinessException as e:
             return Response(
                 {"status":"error",
                  "message": e.message},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        except Exception:
+        except ValueError as e:
             return Response(
-                {
-                    "status": "error",
-                    'message':ERROR_MESSAGES["SYSTEM_ERROR"]},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"status": "error", 'message':str(e)},
+                      status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except PermissionError as e:
+            return Response(
+                {"status": "error", "message": str(e)},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        except Exception as e:
+            return Response(
+                {"status": "error", "message": ERROR_MESSAGES["SYSTEM_ERROR"]},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
         return Response(
-            {"status":"success",
-             "message": SUCCESS_MESSAGES["ASSIGNED_AS_OWNER"]},
+            {"status":"success", "message": SUCCESS_MESSAGES["ASSIGNED_AS_OWNER"]},
             status=status.HTTP_200_OK
         )
 

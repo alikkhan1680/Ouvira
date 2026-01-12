@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.core.validators import RegexValidator
 from accounts.models import CustomUser
 from accounts.utils import validate_password
+from core.messages.error import ERROR_MESSAGES
 from .utilits import verify_turnstile
 import secrets
 
@@ -31,9 +32,24 @@ class RegisterOwnerSerializer(serializers.Serializer):
 
 
 class SignupSerializer(serializers.Serializer):
-    full_name = serializers.CharField(max_length=255, allow_blank=False)
+    full_name = serializers.CharField(
+        required=True,
+        max_length=255,
+        allow_blank=False,
+        error_messages = {
+            "required": ERROR_MESSAGES["REQUIRED_FIELD"],
+            "blank": ERROR_MESSAGES["REQUIRED_FIELD"],
+        }
+    )
+
     primary_mobile = serializers.CharField(
         max_length=20,
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": ERROR_MESSAGES["REQUIRED_FIELD"],
+            "blank": ERROR_MESSAGES["REQUIRED_FIELD"],
+        },
         validators=[
             RegexValidator(
                 regex=r'^\+\d{9,15}$',

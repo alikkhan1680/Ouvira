@@ -1,5 +1,7 @@
 from django.conf import settings
+from django.db import IntegrityError, DataError, DatabaseError
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
@@ -50,7 +52,10 @@ class SignUPView(APIView):
             # user yaratish yoki topish
             user, created = CustomUser.objects.get_or_create(
                 primary_mobile=phone_number,
-                defaults={'full_name': full_name, "username": full_name}
+                defaults={
+                    'full_name': full_name,
+                    "username": full_name
+                }
             )
 
             # eski OTPlarni o‘chirish
@@ -67,22 +72,38 @@ class SignUPView(APIView):
             )
 
             # success = send_sms(phone_number,f"Your OTP code is {otp_code}", settings.TWILIO_PHONE_NUMBER)
-            if otp_code:
-                return Response({
+            return Response(
+                {
                     "status": "success",
-                    "message": "OTP sent successfully",
-                })
-            else:
-                return Response({
-                    "status": "error",
-                    "message": "Failed to send OTP SMS."
-                })
+                    "message": SUCCESS_MESSAGES["PHONE_OTP_SENT"]
+                },status=status.HTTP_200_OK
+            )
+        except IntegrityError:
+            return Response({
+                "status":"error",
+                "message": ERROR_MESSAGES["MOBILE_ALREADY_USED"]
+            }, status=status.HTTP_409_CONFLICT )
 
-        except Exception as e:
+        except ValidationError as e:
+            return Response(
+                {"status": "error", "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        except DatabaseError:
             return Response(
                 {
                     "status": "error",
-                    "message": str(e)
+                    "message": ERROR_MESSAGES["SYSTEM_ERROR"]
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        except Exception:
+            return Response(
+                {
+                    "status": "error",
+                    "message": ERROR_MESSAGES["SYSTEM_ERROR"]
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

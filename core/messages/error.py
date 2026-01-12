@@ -9,4 +9,5 @@ ERROR_MESSAGES = {
     "ACCOUNT_NOT_FOUND": "No account was found with the provided information.",
     "LOGIN_CREDENTIALS_INCORRECT": "Incorrect email or password. Please try again.",
     "SYSTEM_ERROR": "An unexpected error occurred. Please try again later.",
+    "REQUIRED_FIELD": "This field must not be empty.",
 }
