@@ -52,6 +52,26 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    "DEFAULT_THROTTLE_CLASSES": [
+            "rest_framework.throttling.AnonRateThrottle",
+            "rest_framework.throttling.UserRateThrottle",
+            "rest_framework.throttling.ScopedRateThrottle",
+        ],
+    "DEFAULT_THROTTLE_RATES": {
+            "anon": "200/day",     # #  anon umumiy limit (istasam o'zgartiring yoki olib rashlashim mumkun)
+            "user": "1000/day",    # # ADDED: user umumiy limit (istasam  o'zgartiring yoki olib tashlayman)
+
+            # scope-lar (asosiysi shular)
+            "signup": "3/hour",       #   register/signup uchun (tavsiya: 3/hour/IP)
+            "login": "5/15min",       #   login uchun
+            "otp_resend": "3/hour",   #   resend OTP uchun
+            "otp_verify": "5/15min",  #   OTP verify uchun
+            "twofa_verify": "5/5min", #   2FA verify uchun
+            "refresh": "20/15min",    #   refresh endpoint uchun (o'rtacha limit)
+            "enable_2fa": "10/hour",  #   2FA enable uchun (user-based bo'ladi)
+            "register_owner": "3/hour", # owner register uchun
+        },
+
 }
 
 

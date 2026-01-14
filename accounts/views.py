@@ -12,12 +12,17 @@ from .services import UserService, RoleService
 from core.messages.error import ERROR_MESSAGES
 from core.messages.success import SUCCESS_MESSAGES
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
+
+
 
 
 class RegisterOwnerView(APIView):
     permission_classes = [AllowAny]
-    swagger_auto_schema(request_body=RegisterOwnerSerializer)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register_owner"
 
+    swagger_auto_schema(request_body=RegisterOwnerSerializer)
     def post(self, request):
         serializer = RegisterOwnerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -56,7 +61,8 @@ class RegisterOwnerView(APIView):
 
 
 class ChangeUserRoleView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
 
     def post(self, request, user_id):
         new_role = request.data.get("new_role")

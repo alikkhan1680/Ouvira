@@ -24,6 +24,7 @@ from core.messages.error import ERROR_MESSAGES
 from core.messages.success import SUCCESS_MESSAGES
 from core.messages.warning import WARNING_MESSAGES
 from utils.sms import send_sms
+from rest_framework.throttling import ScopedRateThrottle
 
 
 
@@ -35,6 +36,8 @@ OTP_EXPIRY_MINUTES = 5
 # SIGNUP VIEW
 class SignUPView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scop = "signup"
 
     @swagger_auto_schema(request_body=SignupSerializer)
     def post(self, request):
@@ -115,6 +118,9 @@ class SignUPView(APIView):
 logger = logging.getLogger(__name__)
 class OTPVerifyView(APIView):
     permission_classes = [AllowAny]
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_otp_verify"
 
     @swagger_auto_schema(request_body=OTPVerifyserializers)
     def post(self, request):
@@ -200,10 +206,11 @@ class OTPVerifyView(APIView):
 
 
 
-
-
 class ResentOTPView(APIView):
     permission_classes = [AllowAny]
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "otp_resend"
 
     @swagger_auto_schema(request_body=ResentOTPSerializers, security=[])
     def post(self, request):
@@ -258,14 +265,8 @@ class ResentOTPView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request):
-        return Response({
-            "username_or_phone": "user@example.com",
-            "password": "userpassword",
-            "remember_me": True,
-            "cf-turnstile-response": "TOKEN_HERE"
-        })
-
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
     @swagger_auto_schema(request_body=LoginSerializer)
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -362,6 +363,9 @@ class LogouteView(APIView):
 class RefreshTokenView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "refresh"
+
     @swagger_auto_schema(request_body=RefreshTokenSerializers)
     def post(self, request):
         serializer = RefreshTokenSerializers(data=request.data)
@@ -384,6 +388,8 @@ class RefreshTokenView(APIView):
 class Enable2FAView(generics.UpdateAPIView):
     serializer_class = Enable2FASerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "enable_2fa"
 
     def get_object(self):
         return self.request.user
@@ -408,11 +414,8 @@ class Enable2FAView(generics.UpdateAPIView):
 
 class TwoFAVerifyBackupView(APIView):
     permission_classes = [permissions.AllowAny]
-    def get(self, request):
-        return Response({
-              "session_id": "uuid-from-login-response",
-              "backup_code": "ABC123"
-            })
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scop = "twofa_verify"
 
     @swagger_auto_schema(request_body=TwoFABackupVerifySerializer)
     def post(self, request):
@@ -457,12 +460,8 @@ class TwoFAVerifyBackupView(APIView):
 
 class TwoFAVerifyCodeView(APIView):
     permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        return Response({
-            "session_id": "uuid-from-login-response",
-            "code": "123456"
-        })
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scop = "twofa_verify"
 
     @swagger_auto_schema(request_body=TwoFACodeVerifySerializer, security=[])
     def post(self, request):
