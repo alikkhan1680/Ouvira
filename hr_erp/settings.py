@@ -76,12 +76,15 @@ REST_FRAMEWORK = {
 
 
 
+
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),   # ❗ 30 min → 1 soat
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),   # ❗ 14 kun → 7 day
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
 
 SESSION_COOKIE_AGE = 30 * 60
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
@@ -116,6 +119,8 @@ TEMPLATES = [
         },
     },
 ]
+
+
 
 
 WSGI_APPLICATION = 'hr_erp.wsgi.application'

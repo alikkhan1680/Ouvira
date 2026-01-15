@@ -324,6 +324,7 @@ class LoginView(APIView):
             "message": SUCCESS_MESSAGES["LOGIN_SUCCESS"],
             "access": access_token,
             "refresh": refresh_token,
+            "expires_in": 3600,
             "user_role": user.user_role,
             "2fa_required": False
         }, status=status.HTTP_200_OK)
@@ -376,7 +377,8 @@ class RefreshTokenView(APIView):
             token = RefreshToken(refresh_token)
             new_access = str(token.access_token)
             return Response({
-                "access": new_access
+                "access": new_access,
+                "expires_in": 3600
                 }, status=status.HTTP_200_OK)
         except Exception:
             return Response({
@@ -454,6 +456,7 @@ class TwoFAVerifyBackupView(APIView):
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
+            "expires_in": 3600,
             "message": SUCCESS_MESSAGES["VERIFICATION_ACCEPTED"]
         }, status=200)
 
@@ -502,6 +505,7 @@ class TwoFAVerifyCodeView(APIView):
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
+            "expires_in": 3600,
             "message": "Login successful"
         }, status=200)
 
