@@ -25,26 +25,53 @@ TEST_MODE = os.getenv("TEST_MODE", "False") == "True"
 
 
 # Application definition
-INSTALLED_APPS = [
+
+DEFAULT_APPS = (
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    )
+
+THIRD_PARTY = (
+    "drf_yasg",
     "corsheaders",
-    # 3rd part apps
+    "django_tenants",
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+)
+
+CREATED_APPS = (
+    "apps.tenant",
+    "apps.identity.accounts",
+    "apps.identity.auth_module",
+    "apps.identity.user_activity",
+)
+
+SHARED_APPS = [*DEFAULT_APPS, *THIRD_PARTY, *CREATED_APPS]
+
+TENANT_APPS = (
     "rest_framework",
     "drf_yasg",
     "rest_framework_simplejwt.token_blacklist",
-    # local app
-    "apps.identity.accounts.apps.AccountsConfig",
-    "apps.identity.auth_module.apps.AuthModuleConfig",
-    "apps.identity.user_activity.apps.UserActivityConfig",
-]
+    "corsheaders",
+    "apps.identity.accounts",
+    "apps.identity.auth_module",
+    "apps.identity.user_activity",
+)
 
+INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+
+
+TENANT_MODEL = "tenant.Tenant"
+TENANT_DOMAIN_MODEL = "tenant.Domain"
+TENANT_BASE_DOMAIN = os.getenv("TENANT_BASE_DOMAIN", "")
+
+DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -71,6 +98,7 @@ REST_FRAMEWORK = {
 }
 
 
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),  # ❗ 30 min → 1 soat
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # ❗ 14 kun → 7 day
@@ -85,6 +113,7 @@ SESSION_SAVE_EVERY_REQUEST = False
 
 
 MIDDLEWARE = [
+    "apps.tenant.middleware.HeaderTenantMainMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -97,7 +126,9 @@ MIDDLEWARE = [
 
 
 ROOT_URLCONF = "config.urls"
+
 APPEND_SLASH = os.getenv("DJANGO_APPEND_SLASH", "True") == "True"
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -115,7 +146,9 @@ TEMPLATES = [
 
 
 WSGI_APPLICATION = "config.wsgi.application"
+
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+
 SWAGGER_SETTINGS = {
     "USE_SESSION_AUTH": True,  # JWT ishlatamiz, session auth kerak emas
     "SECURITY_DEFINITIONS": {

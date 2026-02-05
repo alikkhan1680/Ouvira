@@ -34,7 +34,7 @@ OTP_EXPIRY_MINUTES = 5
 class SignUPView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
-    throttle_scop = "signup"
+    throttle_scope = "signup"
 
     @swagger_auto_schema(request_body=SignupSerializer)
     def post(self, request):
@@ -133,7 +133,7 @@ class OTPVerifyView(APIView):
             if not otp_entry:
                 return Response({
                     "status": "error", "message": ERROR_MESSAGES["OTP_EXPIRED"]},
-                     status=status.HTTP_400_BAD_REQUEST)
+                    status=status.HTTP_400_BAD_REQUEST)
 
             if otp_entry.is_blocked:
                 if otp_entry.blocked_until and otp_entry.blocked_until > timezone.now():
@@ -202,7 +202,6 @@ class OTPVerifyView(APIView):
             )
 
 
-
 class ResentOTPView(APIView):
     permission_classes = [AllowAny]
 
@@ -229,7 +228,7 @@ class ResentOTPView(APIView):
             return Response({
                 "status": "error",
                 "message": ERROR_MESSAGES["ACCOUNT_NOT_FOUND"]},
-                 status=status.HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN
             )
 
         OTP.objects.filter(phone_number=phone_number).delete()
@@ -346,6 +345,7 @@ class LoginView(APIView):
 
 
 
+
 class LogouteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -424,7 +424,7 @@ class Enable2FAView(generics.UpdateAPIView):
 class TwoFAVerifyBackupView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
-    throttle_scop = "twofa_verify"
+    throttle_scope = "twofa_verify"
 
     @swagger_auto_schema(request_body=TwoFABackupVerifySerializer)
     def post(self, request):
@@ -471,7 +471,7 @@ class TwoFAVerifyBackupView(APIView):
 class TwoFAVerifyCodeView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
-    throttle_scop = "twofa_verify"
+    throttle_scope = "twofa_verify"
 
     @swagger_auto_schema(request_body=TwoFACodeVerifySerializer, security=[])
     def post(self, request):
@@ -515,10 +515,6 @@ class TwoFAVerifyCodeView(APIView):
             "expires_in": 3600,
             "message": "Login successful"
         }, status=200)
-
-
-
-
 
 
 
