@@ -41,10 +41,14 @@ INSTALLED_APPS = [
     "apps.identity.accounts.apps.AccountsConfig",
     "apps.identity.auth_module.apps.AuthModuleConfig",
     "apps.identity.user_activity.apps.UserActivityConfig",
+
+    "apps.company.apps.CompanyConfig"
 ]
 
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+# AUTH_USER_MODEL = "apps.identity.accounts.CustomUser"
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
