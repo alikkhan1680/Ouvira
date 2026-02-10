@@ -1,59 +1,33 @@
 from django.conf import settings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 from .company import Company
+from .role import Role
 
 
-class CompanyMembership(models.Model):
-    class Role(models.TextChoices):
-        OWNER = "owner", _("Owner")
-        ADMIN = "admin", _("Admin")
-        HR = "hr", _("HR Manger")
-        USER = "user", _("User")
-
-    class Status(models.TextChoices):
-        ACTIVE = "active", _("Active")
-        REMOVED = "removed", _("Removed")
-
-    company = models.ForeignKey(
-        Company,
-        on_delete=models.CASCADE,
-        related_name="memberships",
-        verbose_name=_("Company"),
-    )
+class UserCompany(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="company_memberships",
-        verbose_name=_("User"),
+        related_name='company_memberships'
     )
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        default=Role.USER,
-        verbose_name=_("Role")
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='members'
     )
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.ACTIVE,
-        verbose_name=_("Status")
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.PROTECT
     )
-    joined_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Joined at"))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Updated at"))
+
+    is_primary_company = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "company_memberships"
-        verbose_name = _("Company membership")
-        verbose_name_plural = ("Company memberships")
-        ordering = ["-joined_at"]
+        db_table = 'user_companies'
+        unique_together = ('user', 'company')
 
     def __str__(self):
-        return f"{self.user} {self.company} ({self.role})"
-
-    def is_owner(self) -> bool:
-        return self.role == self.Role.OWNER
-
-    def is_admin(self) -> bool:
-        return self.role in {self.Role.OWNER, self.Role.ADMIN}
+        return f'{self.user} - {self.company} ({self.role})'
