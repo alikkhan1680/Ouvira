@@ -1,85 +1,68 @@
 import uuid
-from datetime import timedelta
 
+from django.conf import settings
 from django.db import models
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
+
 from .company import Company
+from .role import Role
 
 
-class CompanyInvitation(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "pending", _("Pending")
-        ACCEPTED = "accepted", _("Accepted")
-        EXPIRED = "expired", _("Expired")
-        CANCELED = "canceled", _("Canceled")
+class Invitation(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_ACCEPTED = 'accepted'
+    STATUS_EXPIRED = 'expired'
+    STATUS_CANCELED = 'canceled'
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_ACCEPTED, 'Accepted'),
+        (STATUS_EXPIRED, 'Expired'),
+        (STATUS_CANCELED, 'Canceled'),
+    )
 
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
-        related_name="invitations",
-        verbose_name=_("Company"),
+        related_name='invitations'
     )
-
-    email = models.EmailField(
-        verbose_name=_("Invited email"),
-    )
-
-    role = models.CharField(
-        max_length=20,
-        choices=(
-            ("admin", "Admin"),
-            ("hr", "HR Manager"),
-            ("user", "User"),
-        ),
-        default="user",
-        verbose_name=_("Role"),
+    email = models.EmailField()
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.PROTECT
     )
 
     token = models.UUIDField(
         default=uuid.uuid4,
         unique=True,
-        editable=False,
-        verbose_name=_("Invitation token"),
+        editable=False
     )
 
     status = models.CharField(
         max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING,
-        verbose_name=_("Status"),
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING
     )
 
-    expires_at = models.DateTimeField(
-        verbose_name=_("Expires at"),
+    expires_at = models.DateTimeField()
+
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='sent_invitations'
+    )
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='accepted_invitations'
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_("Created at"),
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "company_invitations"
-        verbose_name = _("Company invitation")
-        verbose_name_plural = _("Company invitations")
-        indexes = [
-            models.Index(fields=["email"]),
-            models.Index(fields=["token"]),
-        ]
+        db_table = 'invitations'
+        unique_together = ('company', 'email')
 
     def __str__(self):
-        return f"{self.email} → {self.company} ({self.status})"
-
-    # 🔒 Domain helpers (logic emas, holat tekshirish)
-    def is_expired(self) -> bool:
-        return timezone.now() >= self.expires_at
-
-    def mark_expired(self):
-        if self.status == self.Status.PENDING:
-            self.status = self.Status.EXPIRED
-            self.save(update_fields=["status"])
-
-    @classmethod
-    def default_expiry(cls):
-        return timezone.now() + timedelta(days=7)
+        return f'Invite {self.email} to {self.company}'
