@@ -45,26 +45,28 @@ THIRD_PARTY = (
 
 CREATED_APPS = (
     "apps.tenant",
-    "apps.identity.accounts",
-    "apps.identity.auth_module",
-    "apps.identity.user_activity",
 )
 
-SHARED_APPS = [*DEFAULT_APPS, *THIRD_PARTY, *CREATED_APPS]
+SHARED_APPS = [
+    *DEFAULT_APPS,
+    *THIRD_PARTY,
 
-TENANT_APPS = (
-    "rest_framework",
-    "drf_yasg",
-    "rest_framework_simplejwt.token_blacklist",
+    # Tenant core
+    "apps.tenant",
 
-    # local tenant apps
+    # Identity (Faol qoidalar asosida )
     "apps.identity.accounts.apps.AccountsConfig",
     "apps.identity.auth_module.apps.AuthModuleConfig",
     "apps.identity.user_activity.apps.UserActivityConfig",
+    ]
+
+TENANT_APPS = (
     "apps.company.apps.CompanyConfig",
 )
 
 
+
+# INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
