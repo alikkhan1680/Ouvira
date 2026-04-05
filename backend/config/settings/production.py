@@ -2,7 +2,8 @@
 Production settings.
 """
 import sys
-from .base import *  # noqa: F401,F403
+from .base import *
+from corsheaders.defaults import default_headers
 
 DEBUG = False
 
@@ -18,11 +19,15 @@ if SECRET_KEY and "django-insecure" in SECRET_KEY:
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
 # CORS — whitelist only trusted origins
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
+]
+CORS_ALLOW_HEADERS = [
+    *default_headers,
+    "x-tenant",
 ]
 
 # CSRF — trust your frontend domains
@@ -55,5 +60,5 @@ SECURE_HSTS_PRELOAD = True
 # If behind Nginx / Cloudflare / Proxy
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 
